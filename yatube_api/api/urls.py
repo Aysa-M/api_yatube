@@ -12,7 +12,6 @@ router.register(
     basename='comments')
 
 urlpatterns = [
-    path('auth/', include('djoser.urls')),
     path('api/v1/api-token-auth/', views.obtain_auth_token),
     path('api/v1/', include(router.urls)),
     path('api/v1/groups/', APIGroupList.as_view()),
