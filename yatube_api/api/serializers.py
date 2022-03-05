@@ -3,7 +3,10 @@ from rest_framework import serializers
 
 
 class UserSerializer(serializers.ModelSerializer):
-    posts = serializers.StringRelatedField(many=True, read_only=True)
+    posts = serializers.SlugRelatedField(many=True,
+                                         allow_null=True,
+                                         read_only=True,
+                                         slug_field='posts')
 
     class Meta:
         model = User
@@ -15,7 +18,7 @@ class GroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Group
-        fields = ('id', 'title', 'slug', 'description')
+        fields = '__all__'
         read_only_fields = ('slug',)
 
     def validate(self, data):
@@ -37,7 +40,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ('id', 'text', 'author', 'image', 'group', 'pub_date',)
+        fields = '__all__'
         read_only_fields = ('author', 'pub_date',)
 
 
@@ -50,5 +53,5 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ('id', 'author', 'post', 'text', 'created')
+        fields = '__all__'
         read_only_fields = ('author', 'post', 'created',)

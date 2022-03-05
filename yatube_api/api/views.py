@@ -1,9 +1,10 @@
 from django.shortcuts import get_object_or_404
-from posts.models import Comment, Group, Post, User
-from rest_framework import exceptions, permissions, status, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from posts.models import Comment, Group, Post, User
+from .permissions import IsOwnerOrReadOnly
 from .serializers import (CommentSerializer, GroupSerializer, PostSerializer,
                           UserSerializer)
 
@@ -56,8 +57,8 @@ class PostViewSet(viewsets.ModelViewSet):
     Allowed requests: GET, PUT, PATCH, DELETE. Getting, editing or deleting
     exact post by its id.
     """
-    permission_class = [permissions.IsAuthenticated,
-                        permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated,
+                          IsOwnerOrReadOnly]
     queryset = Post.objects.all()
     serializer_class = PostSerializer
 
@@ -67,28 +68,6 @@ class PostViewSet(viewsets.ModelViewSet):
         posts as an author'd identity.
         """
         serializer.save(author=self.request.user)
-
-    def perform_update(self, serializer):
-        """
-        The function proccecess request.methods PUT and PATCH.
-        """
-        if serializer.instance.author != self.request.user:
-            raise exceptions.PermissionDenied(
-                'Права на редактирование отсутствуют.'
-            )
-        super(PostViewSet, self).perform_update(serializer)
-        return Response(status=status.HTTP_200_OK)
-
-    def perform_destroy(self, instance):
-        """
-        The function proccecess request.method DELETE for a chosen post.
-        """
-        if instance.author != self.request.user:
-            raise exceptions.PermissionDenied(
-                'Права на редактирование отсутствуют.'
-            )
-        super(PostViewSet, self).perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -100,15 +79,15 @@ class CommentViewSet(viewsets.ModelViewSet):
     Allowed requests: GET, PUT, PATCH, DELETE. Getting, editing or deleting
     a requested Comment object of the chosen post by its id.
     """
-    permission_class = [permissions.IsAuthenticated,
-                        permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated,
+                          IsOwnerOrReadOnly]
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
 
     def get_queryset(self):
         """Returns new queryset by exact id post."""
-        post_id = self.kwargs['post_id']
-        new_queryset = Comment.objects.filter(post=post_id)
+        post = get_object_or_404(Post, pk=self.kwargs['post_id'])
+        new_queryset = post.comments.all()
         return new_queryset
 
     def perform_create(self, serializer):
@@ -119,25 +98,3 @@ class CommentViewSet(viewsets.ModelViewSet):
         post = get_object_or_404(Post, pk=self.kwargs['post_id'])
         serializer.save(author=self.request.user, post=post)
         return post.comments.all()
-
-    def perform_update(self, serializer):
-        """
-        The function proccecess request.methods PUT and PATCH.
-        """
-        if serializer.instance.author != self.request.user:
-            raise exceptions.PermissionDenied(
-                'Права на редактирование отсутствуют.'
-            )
-        super(CommentViewSet, self).perform_update(serializer)
-        return Response(status=status.HTTP_200_OK)
-
-    def perform_destroy(self, instance):
-        """
-        The function proccecess request.method DELETE for a chosen comment.
-        """
-        if instance.author != self.request.user:
-            raise exceptions.PermissionDenied(
-                'Права на редактирование отсутствуют.'
-            )
-        super(CommentViewSet, self).perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
